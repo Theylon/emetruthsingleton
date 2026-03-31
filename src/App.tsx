@@ -16,6 +16,7 @@ function BackgroundScene() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const modelBase = new URL('models/', document.baseURI).toString();
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#FCF9F8');
@@ -150,7 +151,7 @@ function BackgroundScene() {
     };
 
     addModelWithFallback(
-      '/models/shape-hero.glb',
+      `${modelBase}shape-hero.glb`,
       new THREE.IcosahedronGeometry(1, 0),
       [5.8, 2.3, -2],
       0.002,
@@ -159,7 +160,7 @@ function BackgroundScene() {
       3.05,
     );
     addModelWithFallback(
-      '/models/shape-2.glb',
+      `${modelBase}shape-2.glb`,
       new THREE.OctahedronGeometry(1, 0),
       [-5, -8, -4],
       -0.001,
@@ -168,7 +169,7 @@ function BackgroundScene() {
       2.35,
     );
     addModelWithFallback(
-      '/models/shape-3.glb',
+      `${modelBase}shape-3.glb`,
       new THREE.TorusKnotGeometry(1, 0.28, 100, 16),
       [5, -18, -3],
       0.003,
@@ -177,7 +178,7 @@ function BackgroundScene() {
       1.8,
     );
     addModelWithFallback(
-      '/models/shape-4.glb',
+      `${modelBase}shape-4.glb`,
       new THREE.TetrahedronGeometry(1, 0),
       [-4, -28, -5],
       0.002,
