@@ -247,11 +247,11 @@ function BackgroundScene() {
   return <canvas id="webgl-canvas" ref={canvasRef} aria-hidden="true" />;
 }
 
-const problemCards = [
+const marketCards = [
   {
     id: '01',
-    heading: 'The Problem',
-    title: 'Thin books kill momentum',
+    heading: 'Liquidity',
+    title: 'Thin markets lose traders',
     body:
       'When spreads stay wide and size disappears, traders stop trusting the market. Volume slips, launches feel weak, and retention suffers.',
     points: ['Wide spreads push traders away', 'Weak launches are hard to recover'],
@@ -260,7 +260,7 @@ const problemCards = [
   },
   {
     id: '02',
-    heading: 'The Outcome',
+    heading: 'Retention',
     title: 'Better markets keep users',
     body:
       'For operators, liquidity is product quality. Better depth and cleaner pricing make markets easier to trade and easier to come back to.',
@@ -335,22 +335,22 @@ const programCards = [
 
 const specialistCards = [
   {
-    title: 'Exclusive Data Access',
-    body: 'Our edge starts with access. We work with external data providers that do not sit inside the usual market-making stack.',
+    title: 'Exclusive Sources',
+    body: 'Our edge starts with access to data sources that do not sit inside the usual market-making stack.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
   },
   {
-    title: 'Structured Signal Workflows',
-    body: 'Raw data is not enough. We built workflows that turn fragmented signals into usable pricing inputs for real markets.',
+    title: 'Signal Workflows',
+    body: 'We turn fragmented signals into pricing inputs that can actually be used in live markets.',
     className: 'executive-card md:-translate-y-8',
     bodyClassName: 'text-gray-400',
     titleClassName: 'text-white',
   },
   {
-    title: 'Prediction-Market Native',
-    body: 'Those data workflows are paired with execution built specifically for prediction markets, where openings and repricing matter more than generic flow coverage.',
+    title: 'Built for Event Risk',
+    body: 'Those workflows feed execution built for prediction markets, where openings and repricing matter more than generic flow coverage.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
@@ -359,16 +359,16 @@ const specialistCards = [
 
 const proofCards = [
   {
-    title: '$9M Through The Engine',
-    body: 'More than $9M in execution volume moved through EmeTruth infrastructure over one quarter.',
+    title: 'Fast Execution',
+    body: 'The engine is built to place and adjust orders quickly in live prediction markets.',
   },
   {
-    title: 'Built for Onchain Venues',
-    body: 'The stack is built around onchain prediction markets and the mechanics of order-book trading.',
+    title: 'Private Until Committed',
+    body: 'Activity stays private until commitment, reducing signal leakage before orders hit the market.',
   },
   {
-    title: 'Operators Already Ask For This',
-    body: 'Venue conversations keep pointing to the same need: cleaner launches, tighter books, and better retention.',
+    title: '$19M Through The Engine',
+    body: 'More than $19M in volume has already moved through the engine in live use.',
   },
 ];
 
@@ -496,14 +496,14 @@ export default function App() {
           <div className="second-fold__veil" aria-hidden="true" />
           <div className="mx-auto mb-16 max-w-4xl">
             <p className="mb-5 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
-              The Bottleneck
+              Market Quality
             </p>
             <h2 className="max-w-4xl font-headline text-4xl font-extrabold uppercase tracking-tighter md:text-5xl">
-              If markets feel thin, traders leave.
+              If markets are thin, traders leave.
             </h2>
           </div>
           <div className="mx-auto grid max-w-7xl grid-cols-1 gap-24 md:grid-cols-2">
-            {problemCards.map((card, index) => (
+            {marketCards.map((card, index) => (
               <motion.div
                 key={card.id}
                 id={card.sectionId}
@@ -554,21 +554,13 @@ export default function App() {
                 What We Do
               </p>
               <h2 className="mb-8 font-headline text-5xl leading-[1.1] font-extrabold uppercase tracking-tighter md:text-6xl">
-                Market Making
+                Making
                 <br />
-                For This Category
+                Prediction Markets
               </h2>
               <p className="mb-12 text-lg leading-relaxed text-muted">
                 Built for prediction markets that need reliable liquidity from day one.
               </p>
-
-              <div className="relative bg-surface-alt p-10">
-                <div className="absolute top-0 left-0 h-full w-1 bg-primary" />
-                <div className="mb-2 font-headline text-5xl font-extrabold">Retainer + Rebates</div>
-                <div className="font-headline text-xs font-bold uppercase tracking-widest text-muted">
-                  Typical structure, depending on the venue
-                </div>
-              </div>
             </motion.div>
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:col-span-7">
@@ -649,16 +641,16 @@ export default function App() {
               viewport={{once: true, amount: 0.3}}
             >
               <p className="mb-6 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
-                Proof Of Execution
+                Execution Engine
               </p>
               <h2 className="mb-8 font-headline text-4xl font-extrabold uppercase tracking-tighter md:text-5xl">
-                Built,
+                Engine
                 <br />
-                Not Pitched
+                In Use
               </h2>
               <p className="max-w-2xl text-lg leading-relaxed text-muted">
-                The core stack is already live and has handled real flow. We are not starting
-                from a deck.
+                The engine is already live, built for fast execution, and keeps activity private
+                until committed. It has already carried real volume in market.
               </p>
             </motion.div>
 
