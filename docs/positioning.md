@@ -80,11 +80,8 @@ Differentiators:
 - Focused on onchain venues rather than broad crypto coverage
 - Combines market making with launch and market design support
 - Exclusive relationships with external data providers that improve pricing confidence
+- Internal workflows that turn fragmented external signals into structured pricing inputs
 - Operator-level familiarity with the mechanics and constraints of prediction platforms
-
-Reference frame:
-
-- The closest public analog is the role firms like Wintermute and GSR played in crypto markets, but applied specifically to prediction markets
 
 Important note:
 

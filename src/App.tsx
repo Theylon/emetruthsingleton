@@ -335,22 +335,22 @@ const programCards = [
 
 const specialistCards = [
   {
-    title: 'Built for Prediction Markets',
-    body: 'Prediction markets do not trade like generic crypto pairs. Openings, event repricing, and inventory risk all behave differently.',
+    title: 'Exclusive Data Access',
+    body: 'Our edge starts with access. We work with external data providers that do not sit inside the usual market-making stack.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
   },
   {
-    title: 'Exclusive Pricing Inputs',
-    body: 'We use external data relationships to price new markets with more conviction than a generic market maker can.',
+    title: 'Structured Signal Workflows',
+    body: 'Raw data is not enough. We built workflows that turn fragmented signals into usable pricing inputs for real markets.',
     className: 'executive-card md:-translate-y-8',
     bodyClassName: 'text-gray-400',
     titleClassName: 'text-white',
   },
   {
-    title: 'Operator-Level Collaboration',
-    body: 'We work directly with venues on launches, market quality, and infrastructure instead of just showing up as flow.',
+    title: 'Prediction-Market Native',
+    body: 'Those data workflows are paired with execution built specifically for prediction markets, where openings and repricing matter more than generic flow coverage.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
@@ -374,7 +374,7 @@ const proofCards = [
 
 const navItems = [
   {href: '#program', label: 'Program', sectionId: 'program'},
-  {href: '#specialist', label: 'Why Us', sectionId: 'specialist'},
+  {href: '#specialist', label: 'Edge', sectionId: 'specialist'},
   {href: '#proof', label: 'Proof', sectionId: 'proof'},
   {href: '#lps', label: 'LPs', sectionId: 'lps'},
 ];
@@ -603,17 +603,16 @@ export default function App() {
               viewport={{once: true, amount: 0.35}}
             >
               <p className="mb-6 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
-                Why Us
+                Unfair Advantage
               </p>
               <h2 className="mb-8 font-headline text-4xl font-extrabold uppercase tracking-tighter md:text-5xl">
-                Why Specialist
+                Better Inputs
                 <br />
-                Liquidity Wins
+                Better Markets
               </h2>
               <p className="mx-auto max-w-2xl text-lg text-muted">
-                Prediction markets are not generic crypto markets. The closest reference is what
-                firms like Wintermute and GSR brought to crypto market structure, applied here
-                with full focus on prediction markets.
+                Our edge is not just making markets. It is having access to better information,
+                and the internal workflows to structure that information faster than the market.
               </p>
             </motion.div>
 
