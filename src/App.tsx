@@ -612,13 +612,14 @@ export default function App() {
               {specialistCards.map((card, index) => (
                 <motion.div
                   key={card.title}
-                  className={`ambient-shadow intelligence-panel p-12 ${card.className}`}
+                  className={`ambient-shadow fold-card intelligence-panel relative overflow-hidden p-12 ${card.className}`}
                   variants={revealUp}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{once: true, amount: 0.28}}
                   transition={{delay: index * 0.08}}
                 >
+                  <div className="absolute top-0 left-0 h-16 w-1 bg-gold" />
                   <h3
                     className={`mb-6 font-headline text-xl font-extrabold uppercase ${card.titleClassName}`}
                   >
@@ -658,13 +659,14 @@ export default function App() {
               {proofCards.map((card, index) => (
                 <motion.div
                   key={card.title}
-                  className="ambient-shadow fold-card p-12"
+                  className="ambient-shadow fold-card relative overflow-hidden bg-surface-elevated p-12"
                   variants={revealUp}
                   initial="hidden"
                   whileInView="visible"
                   viewport={{once: true, amount: 0.28}}
                   transition={{delay: index * 0.08}}
                 >
+                  <div className="absolute top-0 left-0 h-16 w-1 bg-gold" />
                   <h3 className="mb-6 font-headline text-xl font-extrabold uppercase">
                     {card.title}
                   </h3>
@@ -678,12 +680,13 @@ export default function App() {
         <section id="lps" className="second-fold relative px-8 py-28 md:px-16 lg:px-24">
           <div className="second-fold__veil" aria-hidden="true" />
           <motion.div
-            className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] border border-black/5 bg-white/70 p-12 md:grid-cols-[1.35fr_0.65fr]"
+            className="ambient-shadow fold-card relative mx-auto grid max-w-7xl gap-10 overflow-hidden rounded-[2rem] border border-black/5 bg-white/80 p-12 md:grid-cols-[1.35fr_0.65fr]"
             variants={revealUp}
             initial="hidden"
             whileInView="visible"
             viewport={{once: true, amount: 0.3}}
           >
+            <div className="absolute top-0 left-0 h-20 w-1 bg-gold" />
             <div>
               <p className="mb-6 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
                 For LPs
