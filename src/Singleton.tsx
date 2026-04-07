@@ -318,18 +318,16 @@ export default function Singleton() {
                 <a href="mailto:emetruth@proton.me" className="singleton-action singleton-action--primary">
                   Contact us
                 </a>
-                {/* Zero-size clipping wrapper — Google Calendar script injects its own button
-                    onto the span, this wrapper ensures it never renders visually */}
-                <div aria-hidden="true" style={{position:'absolute',width:0,height:0,overflow:'hidden',opacity:0,pointerEvents:'none'}}>
+                <div aria-hidden="true" style={{position:'fixed',top:'-9999px',left:'-9999px'}}>
                   <span ref={calendarTriggerRef} />
                 </div>
-                <button
-                  type="button"
-                  onClick={openCalendar}
+                <a
+                  href="#"
+                  onClick={(e) => { e.preventDefault(); openCalendar(); }}
                   className="singleton-action singleton-action--secondary"
                 >
                   Schedule a call
-                </button>
+                </a>
               </div>
             </aside>
           </div>
