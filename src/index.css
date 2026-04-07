@@ -846,38 +846,96 @@ html {
   }
 
   .singleton-copy {
-    padding: 1rem 0 0;
+    padding: 0.75rem 0 0;
   }
 
   .singleton-title {
-    font-size: clamp(3.2rem, 19vw, 4.8rem);
+    font-size: clamp(2.6rem, 12vw, 3.6rem);
+    letter-spacing: -0.06em;
   }
 
   .singleton-description {
     max-width: none;
-    font-size: 1rem;
+    font-size: 0.97rem;
+    margin-top: 1rem;
+    line-height: 1.5;
   }
 
+  /* 2-column card grid on mobile — more visual interest than 3 stacked */
   .singleton-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
     max-width: none;
+    margin-top: 1.25rem;
+  }
+
+  /* Third card spans full width */
+  .singleton-card:last-child {
+    grid-column: span 2;
   }
 
   .singleton-card {
     min-height: auto;
+    padding: 1.1rem;
+    /* Gold left accent replaces hover on touch */
+    border-left: 2px solid rgba(233, 193, 118, 0.5);
+  }
+
+  /* Disable hover transforms on touch */
+  .singleton-card:hover {
+    transform: none;
+    background: #ffffff;
+    color: inherit;
+    border-color: rgba(233, 193, 118, 0.5);
+  }
+
+  .singleton-card__title {
+    font-size: 1.15rem;
+    margin-top: 0.65rem;
+  }
+
+  .singleton-card__body {
+    font-size: 0.88rem;
+    margin-top: 0.65rem;
   }
 
   .singleton-actions {
     justify-content: stretch;
-    padding-top: 0;
+    padding-top: 0.5rem;
   }
 
   .singleton-actions__inner {
     max-width: none;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(0, 0, 0, 0.07);
+  }
+
+  .singleton-action {
+    min-height: 3.75rem;
+    font-size: 0.85rem;
   }
 
   .singleton-canvas {
     display: none;
+  }
+
+  .singleton-orb--top {
+    top: 0;
+    right: 0;
+    width: 60vw;
+    height: 60vw;
+    opacity: 0.7;
+  }
+
+  .singleton-orb--bottom {
+    bottom: auto;
+    top: 55%;
+    left: -4rem;
+    width: 50vw;
+    height: 50vw;
+    opacity: 0.5;
   }
 }
 
