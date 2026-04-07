@@ -1,15 +1,5 @@
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState, useCallback} from 'react';
 import './index.css';
-
-declare global {
-  interface Window {
-    calendar?: {
-      schedulingButton: {
-        load: (options: {url: string; color: string; label: string; target: HTMLElement}) => void;
-      };
-    };
-  }
-}
 
 const cards = [
   {
@@ -243,30 +233,31 @@ function SingletonScene() {
 const CALENDAR_URL =
   'https://calendar.google.com/calendar/appointments/schedules/AcZssZ29Bm-_F3Vq03bG4OG5Vz6oK5hvspwO0DNu6JRynAdlPtSyIKv9L-2DD0cyTpkKVEOrRNs15RWL?gv=true';
 
-export default function Singleton() {
-  const calendarTriggerRef = useRef<HTMLSpanElement>(null);
-
+function CalendarModal({onClose}: {onClose: () => void}) {
   useEffect(() => {
-    const el = calendarTriggerRef.current;
-    if (!el) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-    const init = () => {
-      window.calendar?.schedulingButton.load({
-        url: CALENDAR_URL,
-        color: '#039BE5',
-        label: 'Schedule call',
-        target: el,
-      });
-    };
+  return (
+    <div className="calendar-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Schedule a call">
+      <div className="calendar-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="calendar-modal__close" onClick={onClose} aria-label="Close">&#x2715;</button>
+        <iframe
+          src={CALENDAR_URL}
+          className="calendar-modal__frame"
+          title="Schedule a call"
+          frameBorder="0"
+        />
+      </div>
+    </div>
+  );
+}
 
-    if (window.calendar?.schedulingButton) {
-      init();
-    } else {
-      window.addEventListener('load', init, {once: true});
-    }
-  }, []);
-
-  const openCalendar = () => calendarTriggerRef.current?.click();
+export default function Singleton() {
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const closeCalendar = useCallback(() => setCalendarOpen(false), []);
 
   return (
     <div className="singleton-page font-body selection:bg-gold selection:text-primary">
@@ -318,12 +309,9 @@ export default function Singleton() {
                 <a href="mailto:emetruth@proton.me" className="singleton-action singleton-action--primary">
                   Contact us
                 </a>
-                <div aria-hidden="true" style={{position:'fixed',top:'-9999px',left:'-9999px'}}>
-                  <span ref={calendarTriggerRef} />
-                </div>
                 <a
                   href="#"
-                  onClick={(e) => { e.preventDefault(); openCalendar(); }}
+                  onClick={(e) => { e.preventDefault(); setCalendarOpen(true); }}
                   className="singleton-action singleton-action--secondary"
                 >
                   Schedule a call
@@ -342,6 +330,8 @@ export default function Singleton() {
           <a href="/disclosures.html">Disclosures</a>
         </nav>
       </footer>
+
+      {calendarOpen && <CalendarModal onClose={closeCalendar} />}
     </div>
   );
 }
