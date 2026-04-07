@@ -294,6 +294,15 @@ export default function Singleton() {
           </div>
         </section>
       </main>
+
+      <footer className="singleton-footer">
+        <span className="singleton-footer__copy">&copy; {new Date().getFullYear()} EmeTruth</span>
+        <nav className="singleton-footer__links" aria-label="Legal">
+          <a href="/privacy.html">Privacy</a>
+          <a href="/terms.html">Terms</a>
+          <a href="/disclosures.html">Disclosures</a>
+        </nav>
+      </footer>
     </div>
   );
 }

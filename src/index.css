@@ -571,6 +571,48 @@ html {
   background: rgba(20, 28, 36, 0.08);
 }
 
+.singleton-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.35);
+}
+
+.singleton-footer__links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.singleton-footer__links a {
+  color: rgba(0, 0, 0, 0.35);
+  transition: color 180ms ease;
+}
+
+.singleton-footer__links a:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 767px) {
+  .singleton-footer {
+    position: static;
+    padding: 1.25rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+}
+
 .skip-link {
   position: absolute;
   top: 1rem;
