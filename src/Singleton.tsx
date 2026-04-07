@@ -33,6 +33,7 @@ function SingletonScene() {
 
     let cancelled = false;
     let cleanup: (() => void) | undefined;
+    let modelsLoaded = 0;
     let targetOffsetX = 0;
     let targetOffsetY = 0;
     let currentOffsetX = 0;
@@ -143,6 +144,11 @@ function SingletonScene() {
             baseX: position[0],
             baseScale: model.scale.x,
           });
+
+          modelsLoaded += 1;
+          if (modelsLoaded === 2) {
+            canvas.classList.add('singleton-canvas--loaded');
+          }
         });
       };
 
