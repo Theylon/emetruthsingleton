@@ -571,6 +571,16 @@ html {
   background: rgba(20, 28, 36, 0.08);
 }
 
+/* Off-screen element the Google Calendar script attaches its popup to */
+.singleton-calendar-trigger {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .singleton-footer {
   position: absolute;
   bottom: 0;

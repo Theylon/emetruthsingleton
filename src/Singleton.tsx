@@ -1,6 +1,16 @@
 import {useEffect, useRef} from 'react';
 import './index.css';
 
+declare global {
+  interface Window {
+    calendar?: {
+      schedulingButton: {
+        load: (options: {url: string; color: string; label: string; target: HTMLElement}) => void;
+      };
+    };
+  }
+}
+
 const cards = [
   {
     eyebrow: '01',
@@ -230,7 +240,34 @@ function SingletonScene() {
   );
 }
 
+const CALENDAR_URL =
+  'https://calendar.google.com/calendar/appointments/schedules/AcZssZ29Bm-_F3Vq03bG4OG5Vz6oK5hvspwO0DNu6JRynAdlPtSyIKv9L-2DD0cyTpkKVEOrRNs15RWL?gv=true';
+
 export default function Singleton() {
+  const calendarTriggerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const el = calendarTriggerRef.current;
+    if (!el) return;
+
+    const init = () => {
+      window.calendar?.schedulingButton.load({
+        url: CALENDAR_URL,
+        color: '#039BE5',
+        label: 'Schedule call',
+        target: el,
+      });
+    };
+
+    if (window.calendar?.schedulingButton) {
+      init();
+    } else {
+      window.addEventListener('load', init, {once: true});
+    }
+  }, []);
+
+  const openCalendar = () => calendarTriggerRef.current?.click();
+
   return (
     <div className="singleton-page font-body selection:bg-gold selection:text-primary">
       <main className="singleton-shell">
@@ -281,14 +318,15 @@ export default function Singleton() {
                 <a href="mailto:emetruth@proton.me" className="singleton-action singleton-action--primary">
                   Contact us
                 </a>
-                <a
-                  href="https://calendar.app.google/i9BTsLkjaf5A6c776"
-                  target="_blank"
-                  rel="noreferrer"
+                {/* Hidden element the Google Calendar script attaches its popup to */}
+                <span ref={calendarTriggerRef} aria-hidden="true" className="singleton-calendar-trigger" />
+                <button
+                  type="button"
+                  onClick={openCalendar}
                   className="singleton-action singleton-action--secondary"
                 >
                   Schedule a call
-                </a>
+                </button>
               </div>
             </aside>
           </div>
