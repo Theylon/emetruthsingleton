@@ -1,20 +1,16 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# EmeTruth Website
 
-# Run and deploy your AI Studio app
+Marketing site for EmeTruth, focused on prediction-market operators and selective capital partners.
 
-This contains everything you need to run your app locally.
+## Local Development
 
-View your app in AI Studio: https://ai.studio/apps/594fcfbd-24bd-4ef6-9e0f-12ad84179973
+1. Install dependencies with `npm install`
+2. Start the dev server with `npm run dev`
+3. Build production assets with `npm run build`
 
-## Run Locally
+## Contact Flow Configuration
 
-**Prerequisites:**  Node.js
+- Set `VITE_CONTACT_FORM_ENDPOINT` to a form backend endpoint if you want submissions sent directly from the website.
+- Set `VITE_CALENDLY_URL` to enable the scheduling CTA.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+If those variables are not set, the site falls back to prefilled email workflows to `partners@emetruth.capital`.

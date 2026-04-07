@@ -1,14 +1,21 @@
-import {useEffect, useRef, useState} from 'react';
+import {FormEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {motion, useScroll, useTransform} from 'motion/react';
-import * as THREE from 'three';
-import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+const CONTACT_EMAIL = 'partners@emetruth.capital';
+const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT?.trim();
+const CALENDLY_URL = import.meta.env.VITE_CALENDLY_URL?.trim();
 
 type FloatingObject = {
   baseY: number;
-  mesh: THREE.Object3D;
+  mesh: import('three').Object3D;
   rotSpeedX: number;
   rotSpeedY: number;
 };
+
+type FormStatus =
+  | {type: 'idle'; message: ''}
+  | {type: 'success'; message: string}
+  | {type: 'error'; message: string};
 
 function BackgroundScene() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -16,231 +23,273 @@ function BackgroundScene() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const modelBase = new URL('models/', document.baseURI).toString();
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#FCF9F8');
-    scene.fog = new THREE.FogExp2('#FCF9F8', 0.02);
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 900;
 
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.z = 15;
+    if (prefersReducedMotion || isMobile) {
+      return;
+    }
 
-    const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: false});
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-
-    const keyLight = new THREE.DirectionalLight(0xfff5e6, 2.5);
-    keyLight.position.set(5, 5, 5);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(0xe6f0ff, 1.0);
-    fillLight.position.set(-5, 0, 5);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.DirectionalLight(0xe9c176, 4.0);
-    rimLight.position.set(0, 5, -10);
-    scene.add(rimLight);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      metalness: 0.1,
-      roughness: 0.15,
-      transmission: 0.95,
-      ior: 1.5,
-      thickness: 2.5,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-      envMapIntensity: 1.5,
-    });
-
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
-
-    const envScene = new THREE.Scene();
-    const envLight1 = new THREE.PointLight(0xe9c176, 10, 50);
-    envLight1.position.set(5, 5, 5);
-    const envLight2 = new THREE.PointLight(0xffffff, 10, 50);
-    envLight2.position.set(-5, -5, -5);
-    envScene.add(envLight1, envLight2);
-    scene.environment = pmremGenerator.fromScene(envScene).texture;
-
-    const loader = new GLTFLoader();
-    const objects: FloatingObject[] = [];
+    let cleanup: (() => void) | undefined;
     let cancelled = false;
+    const loadScene = async () => {
+      const [{GLTFLoader}, THREE] = await Promise.all([
+        import('three/examples/jsm/loaders/GLTFLoader.js'),
+        import('three'),
+      ]);
 
-    const registerObject = (
-      object: THREE.Object3D,
-      position: [number, number, number],
-      rotSpeedX: number,
-      rotSpeedY: number,
-      baseY: number,
-    ) => {
-      object.position.set(...position);
-      scene.add(object);
-      objects.push({mesh: object, rotSpeedX, rotSpeedY, baseY});
-    };
+      if (cancelled || !canvas.isConnected) return;
 
-    const createFallbackObject = (geometry: THREE.BufferGeometry, targetSize: number) => {
-      const mesh = new THREE.Mesh(geometry, glassMaterial);
-      mesh.scale.setScalar(targetSize);
-      return mesh;
-    };
+      const modelBase = new URL('models/', document.baseURI).toString();
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#FCF9F8');
+      scene.fog = new THREE.FogExp2('#FCF9F8', 0.02);
 
-    const normalizeModel = (model: THREE.Object3D, targetSize: number) => {
-      const box = new THREE.Box3().setFromObject(model);
-      const size = new THREE.Vector3();
-      const center = new THREE.Vector3();
-      box.getSize(size);
-      box.getCenter(center);
-
-      const maxDimension = Math.max(size.x, size.y, size.z) || 1;
-      const scaleFactor = targetSize / maxDimension;
-
-      model.scale.setScalar(scaleFactor);
-      model.position.sub(center.multiplyScalar(scaleFactor));
-      return model;
-    };
-
-    const addModelWithFallback = (
-      url: string,
-      fallbackGeometry: THREE.BufferGeometry,
-      position: [number, number, number],
-      rotSpeedX: number,
-      rotSpeedY: number,
-      baseY: number,
-      targetSize: number,
-    ) => {
-      loader.load(
-        url,
-        (gltf) => {
-          if (cancelled) return;
-
-          const model = gltf.scene;
-          model.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-              (child as THREE.Mesh).material = glassMaterial;
-            }
-          });
-
-          registerObject(
-            normalizeModel(model, targetSize),
-            position,
-            rotSpeedX,
-            rotSpeedY,
-            baseY,
-          );
-        },
-        undefined,
-        () => {
-          if (cancelled) return;
-
-          registerObject(
-            createFallbackObject(fallbackGeometry, targetSize),
-            position,
-            rotSpeedX,
-            rotSpeedY,
-            baseY,
-          );
-        },
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        100,
       );
-    };
+      camera.position.z = 15;
 
-    addModelWithFallback(
-      `${modelBase}shape-hero.glb`,
-      new THREE.IcosahedronGeometry(1, 0),
-      [5.8, 2.3, -2],
-      0.002,
-      0.003,
-      2,
-      3.05,
-    );
-    addModelWithFallback(
-      `${modelBase}shape-2.glb`,
-      new THREE.OctahedronGeometry(1, 0),
-      [-5, -8, -4],
-      -0.001,
-      0.002,
-      -8,
-      2.35,
-    );
-    addModelWithFallback(
-      `${modelBase}shape-3.glb`,
-      new THREE.TorusKnotGeometry(1, 0.28, 100, 16),
-      [5, -18, -3],
-      0.003,
-      0.001,
-      -18,
-      1.8,
-    );
-    addModelWithFallback(
-      `${modelBase}shape-4.glb`,
-      new THREE.TetrahedronGeometry(1, 0),
-      [-4, -28, -5],
-      0.002,
-      -0.002,
-      -28,
-      2.9,
-    );
-
-    let scrollY = window.scrollY;
-
-    const onScroll = () => {
-      scrollY = window.scrollY;
-    };
-
-    const onResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
+      const renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: false});
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    };
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
 
-    window.addEventListener('scroll', onScroll, {passive: true});
-    window.addEventListener('resize', onResize);
+      const keyLight = new THREE.DirectionalLight(0xfff5e6, 2.5);
+      keyLight.position.set(5, 5, 5);
+      scene.add(keyLight);
 
-    const clock = new THREE.Clock();
-    let frameId = 0;
+      const fillLight = new THREE.DirectionalLight(0xe6f0ff, 1.0);
+      fillLight.position.set(-5, 0, 5);
+      scene.add(fillLight);
 
-    const animate = () => {
-      frameId = window.requestAnimationFrame(animate);
-      const time = clock.getElapsedTime();
-      const targetCameraY = -(scrollY * 0.012);
+      const rimLight = new THREE.DirectionalLight(0xe9c176, 4.0);
+      rimLight.position.set(0, 5, -10);
+      scene.add(rimLight);
 
-      camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+      scene.add(ambientLight);
 
-      objects.forEach((obj, index) => {
-        obj.mesh.rotation.x += obj.rotSpeedX;
-        obj.mesh.rotation.y += obj.rotSpeedY;
-        obj.mesh.position.y = obj.baseY + Math.sin(time * 0.5 + index) * 0.3;
+      const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0.1,
+        roughness: 0.15,
+        transmission: 0.95,
+        ior: 1.5,
+        thickness: 2.5,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        envMapIntensity: 1.5,
       });
 
-      renderer.render(scene, camera);
+      const pmremGenerator = new THREE.PMREMGenerator(renderer);
+      pmremGenerator.compileEquirectangularShader();
+
+      const envScene = new THREE.Scene();
+      const envLight1 = new THREE.PointLight(0xe9c176, 10, 50);
+      envLight1.position.set(5, 5, 5);
+      const envLight2 = new THREE.PointLight(0xffffff, 10, 50);
+      envLight2.position.set(-5, -5, -5);
+      envScene.add(envLight1, envLight2);
+      scene.environment = pmremGenerator.fromScene(envScene).texture;
+
+      const loader = new GLTFLoader();
+      const objects: FloatingObject[] = [];
+
+      const registerObject = (
+        object: import('three').Object3D,
+        position: [number, number, number],
+        rotSpeedX: number,
+        rotSpeedY: number,
+        baseY: number,
+      ) => {
+        object.position.set(...position);
+        scene.add(object);
+        objects.push({mesh: object, rotSpeedX, rotSpeedY, baseY});
+      };
+
+      const createFallbackObject = (
+        geometry: import('three').BufferGeometry,
+        targetSize: number,
+      ) => {
+        const mesh = new THREE.Mesh(geometry, glassMaterial);
+        mesh.scale.setScalar(targetSize);
+        return mesh;
+      };
+
+      const normalizeModel = (model: import('three').Object3D, targetSize: number) => {
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+
+        const maxDimension = Math.max(size.x, size.y, size.z) || 1;
+        const scaleFactor = targetSize / maxDimension;
+
+        model.scale.setScalar(scaleFactor);
+        model.position.sub(center.multiplyScalar(scaleFactor));
+        return model;
+      };
+
+      const addModelWithFallback = (
+        url: string,
+        fallbackGeometry: import('three').BufferGeometry,
+        position: [number, number, number],
+        rotSpeedX: number,
+        rotSpeedY: number,
+        baseY: number,
+        targetSize: number,
+      ) => {
+        loader.load(
+          url,
+          (gltf) => {
+            if (cancelled) return;
+
+            const model = gltf.scene;
+            model.traverse((child) => {
+              if ((child as import('three').Mesh).isMesh) {
+                (child as import('three').Mesh).material = glassMaterial;
+              }
+            });
+
+            registerObject(
+              normalizeModel(model, targetSize),
+              position,
+              rotSpeedX,
+              rotSpeedY,
+              baseY,
+            );
+          },
+          undefined,
+          () => {
+            if (cancelled) return;
+
+            registerObject(
+              createFallbackObject(fallbackGeometry, targetSize),
+              position,
+              rotSpeedX,
+              rotSpeedY,
+              baseY,
+            );
+          },
+        );
+      };
+
+      addModelWithFallback(
+        `${modelBase}shape-hero.glb`,
+        new THREE.IcosahedronGeometry(1, 0),
+        [5.8, 2.3, -2],
+        0.002,
+        0.003,
+        2,
+        3.05,
+      );
+      addModelWithFallback(
+        `${modelBase}shape-2.glb`,
+        new THREE.OctahedronGeometry(1, 0),
+        [-5, -8, -4],
+        -0.001,
+        0.002,
+        -8,
+        2.35,
+      );
+      addModelWithFallback(
+        `${modelBase}shape-3.glb`,
+        new THREE.TorusKnotGeometry(1, 0.28, 100, 16),
+        [5, -18, -3],
+        0.003,
+        0.001,
+        -18,
+        1.8,
+      );
+      addModelWithFallback(
+        `${modelBase}shape-4.glb`,
+        new THREE.TetrahedronGeometry(1, 0),
+        [-4, -28, -5],
+        0.002,
+        -0.002,
+        -28,
+        2.9,
+      );
+
+      let scrollY = window.scrollY;
+      const onScroll = () => {
+        scrollY = window.scrollY;
+      };
+
+      const onResize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      };
+
+      window.addEventListener('scroll', onScroll, {passive: true});
+      window.addEventListener('resize', onResize);
+
+      const clock = new THREE.Clock();
+      let frameId = 0;
+
+      const animate = () => {
+        frameId = window.requestAnimationFrame(animate);
+        const time = clock.getElapsedTime();
+        const targetCameraY = -(scrollY * 0.012);
+
+        camera.position.y += (targetCameraY - camera.position.y) * 0.05;
+
+        objects.forEach((obj, index) => {
+          obj.mesh.rotation.x += obj.rotSpeedX;
+          obj.mesh.rotation.y += obj.rotSpeedY;
+          obj.mesh.position.y = obj.baseY + Math.sin(time * 0.5 + index) * 0.3;
+        });
+
+        renderer.render(scene, camera);
+      };
+
+      animate();
+
+      cleanup = () => {
+        window.cancelAnimationFrame(frameId);
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onResize);
+        pmremGenerator.dispose();
+        glassMaterial.dispose();
+        objects.forEach(({mesh}) => {
+          mesh.traverse((child) => {
+            if ((child as import('three').Mesh).isMesh) {
+              (child as import('three').Mesh).geometry.dispose();
+            }
+          });
+          scene.remove(mesh);
+        });
+        renderer.dispose();
+      };
     };
 
-    animate();
+    let idleHandle: number | ReturnType<typeof globalThis.setTimeout> = 0;
+    let usingIdleCallback = false;
+
+    if ('requestIdleCallback' in window) {
+      usingIdleCallback = true;
+      idleHandle = window.requestIdleCallback(loadScene, {timeout: 1200});
+    } else {
+      idleHandle = globalThis.setTimeout(loadScene, 500);
+    }
 
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(frameId);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
-      pmremGenerator.dispose();
-      glassMaterial.dispose();
-      objects.forEach(({mesh}) => {
-        mesh.traverse((child) => {
-          if ((child as THREE.Mesh).isMesh) {
-            const childMesh = child as THREE.Mesh;
-            childMesh.geometry.dispose();
-          }
-        });
-        scene.remove(mesh);
-      });
-      renderer.dispose();
+      if (usingIdleCallback && 'cancelIdleCallback' in window) {
+        window.cancelIdleCallback(idleHandle as number);
+      } else {
+        globalThis.clearTimeout(idleHandle);
+      }
+      cleanup?.();
     };
   }, []);
 
@@ -335,22 +384,22 @@ const programCards = [
 
 const specialistCards = [
   {
-    title: 'Exclusive Sources',
-    body: 'Our edge starts with access to data sources that do not sit inside the usual market-making stack.',
+    title: 'Prediction-Market Native',
+    body: 'We work specifically with prediction markets, not as a generic crypto market maker selling broad coverage.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
   },
   {
     title: 'Signal Workflows',
-    body: 'We turn fragmented signals into pricing inputs that can actually be used in live markets.',
+    body: 'We turn fragmented external signals into pricing inputs that can actually be used in live event markets.',
     className: 'executive-card md:-translate-y-8',
     bodyClassName: 'text-gray-400',
     titleClassName: 'text-white',
   },
   {
     title: 'Built for Event Risk',
-    body: 'Those workflows feed execution built for prediction markets, where openings and repricing matter more than generic flow coverage.',
+    body: 'Those workflows feed execution built for openings, repricing, and market launches where prediction-market microstructure matters.',
     className: 'bg-surface',
     bodyClassName: 'text-muted',
     titleClassName: '',
@@ -359,8 +408,8 @@ const specialistCards = [
 
 const proofCards = [
   {
-    title: 'Fast Execution',
-    body: 'The engine is built to place and adjust orders quickly in live prediction markets.',
+    title: 'Operator-Focused',
+    body: 'We work with prediction market operators that care about market quality, launch readiness, and trader retention.',
   },
   {
     title: 'Private Until Committed',
@@ -368,7 +417,7 @@ const proofCards = [
   },
   {
     title: '$19M Through The Engine',
-    body: 'More than $19M in volume has already moved through the engine in live use.',
+    body: 'More than $19M in volume has already moved through the execution engine in live use.',
   },
 ];
 
@@ -376,7 +425,6 @@ const navItems = [
   {href: '#program', label: 'What We Do', sectionId: 'program'},
   {href: '#specialist', label: 'Edge', sectionId: 'specialist'},
   {href: '#proof', label: 'Proof', sectionId: 'proof'},
-  {href: '#lps', label: 'LPs', sectionId: 'lps'},
 ];
 
 const revealUp = {
@@ -390,12 +438,14 @@ const revealUp = {
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('program');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formStatus, setFormStatus] = useState<FormStatus>({type: 'idle', message: ''});
   const {scrollYProgress} = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.18], [0, -80]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.22], [1, 0.35]);
 
   useEffect(() => {
-    const sectionIds = ['program', 'specialist', 'proof', 'lps'];
+    const sectionIds = ['program', 'specialist', 'proof', 'contact'];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter((section): section is HTMLElement => Boolean(section));
@@ -420,21 +470,88 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  const scheduleHref = useMemo(() => {
+    if (CALENDLY_URL) return CALENDLY_URL;
+    return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Schedule Intro Call')}`;
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload = {
+      name: String(formData.get('name') || ''),
+      email: String(formData.get('email') || ''),
+      company: String(formData.get('company') || ''),
+      interest: String(formData.get('interest') || ''),
+      message: String(formData.get('message') || ''),
+    };
+
+    setIsSubmitting(true);
+    setFormStatus({type: 'idle', message: ''});
+
+    try {
+      if (CONTACT_FORM_ENDPOINT) {
+        const response = await fetch(CONTACT_FORM_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error('Unable to send form.');
+        }
+
+        form.reset();
+        setFormStatus({
+          type: 'success',
+          message: 'Your message was sent. We will follow up directly.',
+        });
+      } else {
+        const subject = `${payload.interest || 'Operator Inquiry'} - ${payload.company || payload.name}`;
+        const body = [
+          `Name: ${payload.name}`,
+          `Email: ${payload.email}`,
+          `Company: ${payload.company}`,
+          `Interest: ${payload.interest}`,
+          '',
+          payload.message,
+        ].join('\n');
+        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        setFormStatus({
+          type: 'success',
+          message: 'Your email draft opened. Send it and we will follow up directly.',
+        });
+      }
+    } catch {
+      setFormStatus({
+        type: 'error',
+        message: `The form could not be sent. Email us directly at ${CONTACT_EMAIL}.`,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="font-body selection:bg-gold selection:text-primary">
       <BackgroundScene />
 
-      <nav className="glass-nav fixed top-0 z-50 flex w-full items-center justify-between px-8 py-6 transition-all duration-300">
-        <div className="font-headline text-xl font-extrabold uppercase tracking-tighter">
-          EmeTruth
-        </div>
-        <div className="hidden items-center gap-12 md:flex">
+      <nav className="glass-nav fixed top-0 z-50 flex w-full items-center justify-between px-6 py-5 transition-all duration-300 md:px-8 md:py-6">
+        <a href="/" className="flex items-center gap-3 font-headline text-xl font-extrabold uppercase tracking-tighter">
+          <img src="/emetruth-mark.png" alt="" className="h-9 w-9 rounded-lg object-cover" />
+          <span>EmeTruth</span>
+        </a>
+        <div className="hidden items-center gap-7 md:flex">
           {navItems.map((item) => (
             <a
               key={item.sectionId}
               href={item.href}
               data-active={activeSection === item.sectionId}
-              className="nav-link font-headline text-xs font-bold uppercase tracking-widest text-muted transition-colors hover:text-primary"
+              className="nav-link font-headline text-[11px] font-bold uppercase tracking-[0.18em] text-muted transition-colors hover:text-primary"
             >
               {item.label}
             </a>
@@ -442,13 +559,13 @@ export default function App() {
         </div>
         <a
           href="#contact"
-          className="rounded bg-gold px-8 py-4 font-headline text-xs font-bold uppercase tracking-widest text-primary transition-opacity hover:opacity-80"
+          className="rounded bg-gold px-6 py-4 font-headline text-[11px] font-bold uppercase tracking-[0.18em] text-primary transition-opacity hover:opacity-80 md:px-8"
         >
           Talk To Us
         </a>
       </nav>
 
-      <main className="relative z-10 pt-32">
+      <main className="relative z-10 pt-28 md:pt-32">
         <motion.section
           style={{y: heroY, opacity: heroOpacity}}
           className="flex min-h-[85vh] items-center px-8 md:px-16 lg:px-24"
@@ -460,20 +577,23 @@ export default function App() {
             variants={revealUp}
           >
             <p className="mb-8 font-headline text-sm font-bold uppercase tracking-[0.2em] text-gold">
-              For Prediction Markets
+              For Prediction Market Operators
             </p>
-            <h1 className="mb-12 max-w-5xl font-headline text-5xl leading-[0.94] font-extrabold tracking-tighter md:text-7xl lg:text-[6.25rem]">
+            <h1 className="mb-10 max-w-5xl font-headline text-5xl leading-[0.94] font-extrabold tracking-tighter md:text-7xl lg:text-[6.25rem]">
               Liquidity Layer
               <br />
-              <span className="text-gold">that scales</span>
+              <span className="text-gold">for prediction</span>
               <br />
-              Prediction Markets.
+              markets.
             </h1>
-            <div className="mt-16 flex flex-col items-start gap-8 md:flex-row md:gap-16">
+            <div className="mt-12 flex max-w-4xl flex-col gap-8 md:flex-row md:gap-16">
               <div className="h-24 w-1 shrink-0 bg-gold" />
-              <p className="max-w-2xl text-lg leading-relaxed font-medium text-muted md:text-xl">
-                EmeTruth makes prediction markets liquid and efficient.
-              </p>
+              <div className="space-y-5">
+                <p className="max-w-3xl text-lg leading-relaxed font-medium text-muted md:text-xl">
+                  Emetruth works with prediction markets to improve market quality and quantity, so
+                  your traders keep coming back.
+                </p>
+              </div>
             </div>
             <div className="mt-12 flex flex-col gap-4 sm:flex-row">
               <a
@@ -483,10 +603,12 @@ export default function App() {
                 Talk To Us
               </a>
               <a
-                href="#proof"
-                className="secondary-button px-10 py-5 font-headline text-xs font-bold uppercase tracking-widest text-primary"
+                href={scheduleHref}
+                target={CALENDLY_URL ? '_blank' : undefined}
+                rel={CALENDLY_URL ? 'noreferrer' : undefined}
+                className="secondary-button px-10 py-5 text-center font-headline text-xs font-bold uppercase tracking-widest text-primary"
               >
-                View Proof
+                Schedule A Call
               </a>
             </div>
           </motion.div>
@@ -554,12 +676,15 @@ export default function App() {
                 What We Do
               </p>
               <h2 className="mb-8 font-headline text-5xl leading-[1.1] font-extrabold uppercase tracking-tighter md:text-6xl">
-                Making
+                Liquidity
+                <br />
+                Programs For
                 <br />
                 Prediction Markets
               </h2>
               <p className="mb-12 text-lg leading-relaxed text-muted">
-                Built for prediction markets that need reliable liquidity from day one.
+                Built for prediction markets that need reliable liquidity, stronger launches, and a
+                better trader experience from day one.
               </p>
             </motion.div>
 
@@ -575,9 +700,9 @@ export default function App() {
                   transition={{delay: index * 0.12}}
                 >
                   <div className="mb-8 h-10 w-10 text-gold">{card.icon}</div>
-                  <h4 className="font-headline text-lg font-extrabold uppercase tracking-wide">
+                  <h3 className="font-headline text-lg font-extrabold uppercase tracking-wide">
                     {card.title}
-                  </h4>
+                  </h3>
                   <p className="mt-4 max-w-xs leading-relaxed text-muted">{card.body}</p>
                 </motion.div>
               ))}
@@ -595,7 +720,7 @@ export default function App() {
               viewport={{once: true, amount: 0.35}}
             >
               <p className="mb-6 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
-                Unfair Advantage
+                Why EmeTruth
               </p>
               <h2 className="mb-8 font-headline text-4xl font-extrabold uppercase tracking-tighter md:text-5xl">
                 Better Inputs
@@ -603,8 +728,9 @@ export default function App() {
                 Better Markets
               </h2>
               <p className="mx-auto max-w-2xl text-lg text-muted">
-                Our edge is not just making markets. It is having access to better information,
-                and the internal workflows to structure that information faster than the market.
+                Prediction markets need specialist liquidity. The job is not generic crypto flow
+                coverage. It is pricing event risk, openings, and repricing with tighter operational
+                feedback loops.
               </p>
             </motion.div>
 
@@ -651,7 +777,8 @@ export default function App() {
               </h2>
               <p className="max-w-2xl text-lg leading-relaxed text-muted">
                 The engine is already live, built for fast execution, and keeps activity private
-                until committed. It has already carried real volume in market.
+                until committed. It has already carried real volume in market. We will expand public
+                proof over time, but the operating posture is already live.
               </p>
             </motion.div>
 
@@ -703,7 +830,7 @@ export default function App() {
             </div>
             <div className="flex items-end">
               <a
-                href="mailto:partners@emetruth.capital?subject=LP%20Inquiry"
+                href={`mailto:${CONTACT_EMAIL}?subject=LP%20Inquiry`}
                 className="cta-button inline-flex w-full items-center justify-center rounded-full bg-primary px-10 py-5 font-headline text-xs font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-85"
               >
                 Inquire As An LP
@@ -712,53 +839,141 @@ export default function App() {
           </motion.div>
         </section>
 
-        <section id="contact" className="px-8 py-48 text-center">
+        <section id="contact" className="px-8 py-36 md:px-16 lg:px-24">
           <motion.div
-            className="mx-auto max-w-4xl"
+            className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[0.95fr_1.05fr]"
             variants={revealUp}
             initial="hidden"
             whileInView="visible"
-            viewport={{once: true, amount: 0.4}}
+            viewport={{once: true, amount: 0.3}}
           >
-            <h2 className="mb-16 font-headline text-6xl leading-[0.9] font-extrabold uppercase tracking-tighter md:text-8xl">
-              Need better
-              <br />
-              markets?
-            </h2>
-            <p className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-muted">
-              For conversations around liquidity, partnerships, or capital.
-            </p>
-            <div className="flex flex-col justify-center gap-6 sm:flex-row">
-              <a
-                href="mailto:partners@emetruth.capital"
-                className="cta-button rounded-full bg-gold px-12 py-5 font-headline text-xs font-bold uppercase tracking-widest text-primary transition-opacity hover:opacity-80"
-              >
-                Talk To Us
-              </a>
+            <div className="space-y-8">
+              <div>
+                <p className="mb-6 font-headline text-xs font-bold uppercase tracking-[0.2em] text-gold">
+                  Contact
+                </p>
+                <h2 className="mb-6 font-headline text-5xl leading-[0.92] font-extrabold uppercase tracking-tighter md:text-7xl">
+                  Talk To
+                  <br />
+                  EmeTruth
+                </h2>
+                <p className="max-w-xl text-lg leading-relaxed text-muted">
+                  Reach out if you run a prediction market, are launching one, or want to discuss a
+                  specialist liquidity program.
+                </p>
+              </div>
+              <div className="fold-card space-y-6 p-10">
+                <div>
+                  <h3 className="font-headline text-xl font-extrabold uppercase tracking-wide">
+                    Direct Contact
+                  </h3>
+                  <p className="mt-3 text-muted">
+                    Email us directly at <a href={`mailto:${CONTACT_EMAIL}`} className="text-primary underline underline-offset-4">{CONTACT_EMAIL}</a>.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-headline text-xl font-extrabold uppercase tracking-wide">
+                    Schedule
+                  </h3>
+                  <p className="mt-3 text-muted">
+                    Use the scheduling link for intro calls. If Calendly is not live yet, this opens a direct email request.
+                  </p>
+                </div>
+                <a
+                  href={scheduleHref}
+                  target={CALENDLY_URL ? '_blank' : undefined}
+                  rel={CALENDLY_URL ? 'noreferrer' : undefined}
+                  className="secondary-button inline-flex min-h-14 items-center justify-center px-8 py-4 font-headline text-xs font-bold uppercase tracking-widest text-primary"
+                >
+                  Schedule Intro Call
+                </a>
+              </div>
             </div>
+
+            <form onSubmit={handleSubmit} className="fold-card space-y-6 p-10">
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="form-label">Name</span>
+                  <input required name="name" type="text" className="form-input" />
+                </label>
+                <label className="space-y-2">
+                  <span className="form-label">Work Email</span>
+                  <input required name="email" type="email" className="form-input" />
+                </label>
+              </div>
+              <div className="grid gap-6 md:grid-cols-2">
+                <label className="space-y-2">
+                  <span className="form-label">Company</span>
+                  <input required name="company" type="text" className="form-input" />
+                </label>
+                <label className="space-y-2">
+                  <span className="form-label">Inquiry Type</span>
+                  <select required name="interest" className="form-input">
+                    <option value="">Select one</option>
+                    <option value="Operator Inquiry">Operator inquiry</option>
+                    <option value="Launch Support">Launch support</option>
+                    <option value="LP Inquiry">LP inquiry</option>
+                    <option value="General">General</option>
+                  </select>
+                </label>
+              </div>
+              <label className="space-y-2">
+                <span className="form-label">What are you working on?</span>
+                <textarea
+                  required
+                  name="message"
+                  rows={6}
+                  className="form-input min-h-40 resize-y"
+                  placeholder="Tell us about the market, launch timeline, liquidity issues, or what you want to improve."
+                />
+              </label>
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="cta-button rounded-full bg-gold px-10 py-5 font-headline text-xs font-bold uppercase tracking-widest text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Sending...' : 'Send Inquiry'}
+                </button>
+                <p className="max-w-sm text-sm leading-relaxed text-muted">
+                  {CONTACT_FORM_ENDPOINT
+                    ? 'Submissions send directly through the contact endpoint.'
+                    : 'Until a form backend is configured, submit opens a prefilled email draft.'}
+                </p>
+              </div>
+              {formStatus.type !== 'idle' ? (
+                <p
+                  className={`text-sm ${formStatus.type === 'error' ? 'text-red-700' : 'text-green-700'}`}
+                  aria-live="polite"
+                >
+                  {formStatus.message}
+                </p>
+              ) : null}
+            </form>
           </motion.div>
         </section>
       </main>
 
       <footer className="relative z-10 flex flex-col items-center justify-between gap-8 bg-surface-elevated px-8 py-12 md:flex-row md:px-16 lg:px-24">
-        <div className="font-headline text-lg font-extrabold uppercase tracking-tighter">
-          EmeTruth
+        <div className="flex items-center gap-3 font-headline text-lg font-extrabold uppercase tracking-tighter">
+          <img src="/emetruth-mark.png" alt="" className="h-8 w-8 rounded-lg object-cover" />
+          <span>EmeTruth</span>
         </div>
         <div className="flex flex-wrap justify-center gap-8">
           <a
-            href="#"
+            href="/privacy.html"
             className="font-headline text-[10px] font-bold uppercase tracking-widest text-muted transition-colors hover:text-gold"
           >
             Privacy Policy
           </a>
           <a
-            href="#"
+            href="/terms.html"
             className="font-headline text-[10px] font-bold uppercase tracking-widest text-muted transition-colors hover:text-gold"
           >
             Terms of Service
           </a>
           <a
-            href="#"
+            href="/disclosures.html"
             className="font-headline text-[10px] font-bold uppercase tracking-widest text-muted transition-colors hover:text-gold"
           >
             Regulatory Disclosures

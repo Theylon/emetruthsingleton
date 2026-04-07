@@ -11,7 +11,9 @@ export default defineConfig(({mode}) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
+          legacy: path.resolve(__dirname, 'legacy.html'),
           polished: path.resolve(__dirname, 'polished.html'),
+          singleton: path.resolve(__dirname, 'Singleton.html'),
         },
       },
     },

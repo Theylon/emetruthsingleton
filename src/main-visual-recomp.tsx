@@ -1,10 +1,10 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import Singleton from './Singleton.tsx';
+import AppVisualRecomp from './AppVisualRecomp.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Singleton />
+    <AppVisualRecomp />
   </StrictMode>,
 );

@@ -1,10 +1,9 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import Singleton from './Singleton.tsx';
-import './index.css';
+import LegalPage from './LegalPage';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Singleton />
+    <LegalPage page="terms" />
   </StrictMode>,
 );
