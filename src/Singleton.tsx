@@ -318,8 +318,11 @@ export default function Singleton() {
                 <a href="mailto:emetruth@proton.me" className="singleton-action singleton-action--primary">
                   Contact us
                 </a>
-                {/* Hidden element the Google Calendar script attaches its popup to */}
-                <span ref={calendarTriggerRef} aria-hidden="true" className="singleton-calendar-trigger" />
+                {/* Zero-size clipping wrapper — Google Calendar script injects its own button
+                    onto the span, this wrapper ensures it never renders visually */}
+                <div aria-hidden="true" style={{position:'absolute',width:0,height:0,overflow:'hidden',opacity:0,pointerEvents:'none'}}>
+                  <span ref={calendarTriggerRef} />
+                </div>
                 <button
                   type="button"
                   onClick={openCalendar}
