@@ -816,16 +816,23 @@ html {
     transform: none;
   }
 
+  .singleton-page {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .singleton-shell {
     padding: 0;
     height: auto;
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: unset;
   }
 
   .singleton-panel {
-    min-height: auto;
     height: auto;
+    min-height: unset;
+    overflow: visible;
   }
 
   .singleton-header {
@@ -835,7 +842,7 @@ html {
   .singleton-grid {
     grid-template-columns: 1fr;
     gap: 1.25rem;
-    padding: 1.25rem;
+    padding: 1.25rem 1.25rem 2rem;
   }
 
   .singleton-copy {
